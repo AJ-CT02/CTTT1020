@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CTTT</title>
+<title>Bông hoa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&display=swap" rel="stylesheet">
 <style>
 * {
   margin: 0;
@@ -308,6 +311,50 @@
   opacity: 0;
 }
 
+/* ---------- Canh (co gian theo man hinh de vua voi trai tim) ---------- */
+#castle #scene {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 52%;
+}
+
+/* ---------- Loi chuc chay doc theo vien trai tim ---------- */
+#heart-text {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+  overflow: visible;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 8px rgba(255, 79, 154, 0.45));
+}
+
+#heart-text text {
+  font-family: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
+  font-weight: 600;
+  fill: #ffa6d0;
+  text-rendering: geometricPrecision;
+}
+
+#heart-text tspan {
+  fill-opacity: 0;
+  transition: fill-opacity 0.4s ease;
+}
+
+#heart-text tspan.show {
+  fill-opacity: 1;
+}
+
+#heart-text.done text {
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { fill: #ffa6d0; }
+  50%      { fill: #ffd0e6; }
+}
+
 /* ---------- Keyframes ---------- */
 @keyframes hover {
   0%   { margin-top: 60px; }
@@ -363,6 +410,7 @@
 <body>
 
 <div id="castle">
+  <div id="scene">
   <div id="table"></div>
 
   <div class="shade-wrap hover-animation" id="main">
@@ -388,7 +436,10 @@
       <div id="bottom-shade"></div>
     </div>
   </div>
-</div>
+  </div><!-- /scene -->
+</div><!-- /castle -->
+
+<svg id="heart-text" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"></svg>
 
 <script>
 (() => {
@@ -469,6 +520,128 @@
     [135, 132, 170, 190, .25, 2.5, .75],
     [135, 132, 320, 315, .2, 5, .3, 'sub']
   ].forEach((o) => CreateMagicDust(...o));
+
+})();
+</script>
+
+<script>
+/* Loi chuc chay tung chu doc theo vien trai tim, bao quanh bong hoa */
+(() => {
+
+  const message =
+    'Chúc mừng ngày 20 tháng 10! Chúc em luôn xinh đẹp, rạng rỡ, mạnh khỏe và thật hạnh phúc. ' +
+    'Cảm ơn em đã luôn ở bên cạnh anh. Anh yêu em ♥';
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const XLINK = 'http://www.w3.org/1999/xlink';
+  const svg = document.getElementById('heart-text');
+  const scene = document.getElementById('scene');
+
+  // Duong vien trai tim (toa do mau): diem M, roi 4 duong Bezier bac 3, bat dau tu cho lom tren dinh
+  const HEART = [
+    [0, 21.054],
+    [0, 21.054], [24.618, -15.165], [60.75, 8.554],
+    [93.249, 29.888], [57.749, 96.888], [0, 117.388],
+    [-57.749, 96.888], [-93.249, 29.888], [-60.75, 8.554],
+    [-24.618, -15.165], [0, 21.054], [0, 21.054]
+  ];
+  const BASE = 4.4;   // so px cho moi don vi toa do mau khi man hinh du rong
+
+  function heartD(tx, ty, s) {
+    const q = HEART.map((p) => (tx + p[0] * s).toFixed(2) + ',' + (ty + p[1] * s).toFixed(2));
+    return 'M' + q[0] +
+      ' C' + q[1] + ' ' + q[2] + ' ' + q[3] +
+      ' C' + q[4] + ' ' + q[5] + ' ' + q[6] +
+      ' C' + q[7] + ' ' + q[8] + ' ' + q[9] +
+      ' C' + q[10] + ' ' + q[11] + ' ' + q[12] + 'z';
+  }
+
+  // Dung <defs><path> + <text><textPath> voi moi chu la mot <tspan> de hien dan
+  const defs = document.createElementNS(NS, 'defs');
+  const shape = document.createElementNS(NS, 'path');
+  shape.id = 'shape';
+  defs.appendChild(shape);
+  svg.appendChild(defs);
+
+  const textEl = document.createElementNS(NS, 'text');
+  const textPath = document.createElementNS(NS, 'textPath');
+  textPath.setAttribute('href', '#shape');
+  textPath.setAttributeNS(XLINK, 'xlink:href', '#shape');
+  const tspans = Array.from(message).map((ch) => {
+    const t = document.createElementNS(NS, 'tspan');
+    t.textContent = ch === ' ' ? ' ' : ch;
+    textPath.appendChild(t);
+    return t;
+  });
+  textEl.appendChild(textPath);
+  svg.appendChild(textEl);
+
+  function layout() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+
+    // He so co gian chung cho ca canh va trai tim (de luon nam gon trong man hinh)
+    const k = Math.max(0.3, Math.min(1, (0.48 * vh - 30) / 308, vw / 700));
+    const s = BASE * k;
+    const sc = k * 0.88;   // thu nho canh mot chut de chao den va ban nam gon trong trai tim
+    scene.style.transform = 'scale(' + sc + ')';
+
+    // Dat trai tim sao cho tam chao den (khoang y = 46 trong toa do mau) trung tam chao
+    const tx = vw / 2;
+    const ty = vh * 0.52 - 6 * sc - 46 * s;
+    shape.setAttribute('d', heartD(tx, ty, s));
+
+    // Chon co chu de dong chu vua khit chu vi trai tim
+    textEl.style.fontSize = '20px';
+    textPath.removeAttribute('startOffset');
+    const w20 = textEl.getComputedTextLength();
+    const P = shape.getTotalLength();
+    let f = 22;
+    if (w20 > 0) f = 0.96 * P / (w20 / 20 + 1);
+    f = Math.max(10, Math.min(30, f));
+    textEl.style.fontSize = f + 'px';
+    textPath.setAttribute('startOffset', f.toFixed(1));
+  }
+
+  layout();
+  window.addEventListener('resize', layout);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
+
+  // Hieu ung chay chu (bam vao man hinh de tam dung / tiep tuc / chay lai)
+  const STEP = 85;      // ms moi chu
+  const DELAY = 800;    // cho truoc khi bat dau
+  let elapsed = -DELAY, shown = 0, last = null, rid = null;
+
+  function frame(now) {
+    if (last === null) last = now;
+    elapsed += now - last;
+    last = now;
+    const target = Math.min(tspans.length, Math.max(0, Math.floor(elapsed / STEP) + 1));
+    while (shown < target) tspans[shown++].classList.add('show');
+    if (shown >= tspans.length) {
+      svg.classList.add('done');
+      rid = null;
+      return;
+    }
+    rid = requestAnimationFrame(frame);
+  }
+  function start() { last = null; rid = requestAnimationFrame(frame); }
+
+  document.addEventListener('click', () => {
+    if (shown >= tspans.length) {
+      tspans.forEach((t) => t.classList.remove('show'));
+      svg.classList.remove('done');
+      elapsed = -400;
+      shown = 0;
+      start();
+    } else if (rid) {
+      cancelAnimationFrame(rid);
+      rid = null;
+    } else {
+      start();
+    }
+  });
+
+  start();
 
 })();
 </script>
